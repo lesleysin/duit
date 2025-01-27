@@ -5,12 +5,22 @@ import 'package:flutter_duit/src/view_manager/view_layout.dart';
 
 base class SimpleViewManager extends ViewManager {
   late DuitViewLayout _view;
+  final Map<String, UIElementController> _viewControllers = {};
 
   @override
   @mustCallSuper
   Future<DuitView?> prepareLayout(Map<String, dynamic> json) async {
     try {
       _view = DuitViewLayout();
+
+      if (json.containsKey("embedded")) {
+        final embedded = json["embedded"];
+        if (embedded is List) {
+          await DuitRegistry.registerComponents(
+            embedded.cast<Map<String, dynamic>>(),
+          );
+        }
+      }
 
       switch (json) {
         case {
@@ -53,4 +63,32 @@ base class SimpleViewManager extends ViewManager {
 
     return _view.build(tag);
   }
+
+  @override
+  void notifyWidgetDisplayStateChanged(String viewTag, int state) {
+    _view.isReady = state == 1;
+  }
+
+  @override
+  bool isWidgetReady(String viewTag) {
+    return _view.isReady;
+  }
+
+  @override
+  void addController(String id, UIElementController controller) {
+    _viewControllers[id] = controller;
+  }
+
+  @override
+  UIElementController? removeController(String id) {
+    return _viewControllers.remove(id);
+  }
+
+  @override
+  UIElementController? getController(String id) {
+    return _viewControllers[id];
+  }
+
+  @override
+  int get controllersCount => _viewControllers.length;
 }

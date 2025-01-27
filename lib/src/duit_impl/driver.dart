@@ -43,8 +43,6 @@ final class DuitDriver with DriverHooks implements UIDriver {
   @override
   Stream<UIDriverEvent> get eventStream => eventStreamController.stream;
 
-  final Map<String, UIElementController> _viewControllers = {};
-
   @override
   ExternalEventHandler? externalEventHandler;
 
@@ -158,19 +156,22 @@ final class DuitDriver with DriverHooks implements UIDriver {
   @protected
   @override
   void attachController(String id, UIElementController controller) {
-    final hasController = _viewControllers.containsKey(id);
-    assert(!hasController,
-        "ViewController with id already exists. You cannot attach controller to driver because it  contains element for id ($id)");
-    _viewControllers[id] = controller;
+    _viewManager.addController(id, controller);
+    // final hasController = _viewControllers.containsKey(id);
+    // assert(!hasController,
+    //     "ViewController with id already exists. You cannot attach controller to driver because it  contains element for id ($id)");
+    // _viewControllers[id] = controller;
   }
 
   @protected
   @override
-  void detachController(String id) => _viewControllers.remove(id)?.dispose();
+  void detachController(String id) =>
+      _viewManager.removeController(id)?.dispose();
 
   @protected
   @override
-  UIElementController? getController(String id) => _viewControllers[id];
+  UIElementController? getController(String id) =>
+      _viewManager.getController(id);
 
   Future<Map<String, dynamic>> _connect() async {
     Map<String, dynamic>? json;
@@ -273,9 +274,9 @@ final class DuitDriver with DriverHooks implements UIDriver {
   void dispose() {
     onDispose?.call();
     transport?.dispose();
-    _viewControllers
-      ..forEach((_, c) => c.dispose())
-      ..clear();
+    // _viewControllers
+    //   ..forEach((_, c) => c.dispose())
+    //   ..clear();
     eventStreamController.close();
   }
 
@@ -445,7 +446,7 @@ final class DuitDriver with DriverHooks implements UIDriver {
   }
 
   @visibleForTesting
-  int get controllersCount => _viewControllers.length;
+  int get controllersCount => _viewManager.controllersCount;
 
   @override
   Map<String, dynamic> preparePayload(
@@ -455,7 +456,7 @@ final class DuitDriver with DriverHooks implements UIDriver {
 
     if (dependencies.isNotEmpty) {
       for (final dependency in dependencies) {
-        final controller = _viewControllers[dependency.id];
+        final controller = _viewManager.getController(dependency.id);
         if (controller != null) {
           final attribute = controller.attributes.payload;
           if (attribute is AttendedModel) {
@@ -473,7 +474,7 @@ final class DuitDriver with DriverHooks implements UIDriver {
     String controllerId,
     Map<String, dynamic> json,
   ) async {
-    final controller = _viewControllers[controllerId];
+    final controller = _viewManager.getController(controllerId);
     if (controller != null) {
       if (controller.type == ElementType.component) {
         await _resolveComponentUpdate(controller, json);
@@ -488,6 +489,20 @@ final class DuitDriver with DriverHooks implements UIDriver {
 
       controller.updateState(attributes);
     }
+  }
+
+  @override
+  void notifyWidgetDisplayStateChanged(
+    String viewTag,
+    int state,
+  ) {
+    _viewManager.notifyWidgetDisplayStateChanged(viewTag, state);
+    logger?.info("Widget $viewTag state changed to $state");
+  }
+
+  @override
+  bool isWidgetReady(String viewTag) {
+    return _viewManager.isWidgetReady(viewTag);
   }
 //</editor-fold>
 }

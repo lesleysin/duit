@@ -27,10 +27,16 @@ final class MultiViewManager extends SimpleViewManager {
             case {
               "widgets": Map collection,
             }) {
+          final widgets = collection.entries.cast<MapEntry<String, dynamic>>();
+
+          for (final widget in widgets) {
           await _layout.prepareModel(
-            collection.cast<String, dynamic>(),
+              <String, dynamic>{
+                widget.key: widget.value,
+              },
             driver,
           );
+          }
 
           return _layout;
         }
@@ -44,6 +50,23 @@ final class MultiViewManager extends SimpleViewManager {
         stackTrace: s,
       );
       rethrow;
+    }
+  }
+
+  @override
+  void notifyWidgetDisplayStateChanged(
+    String viewTag,
+    int state,
+  ) {
+    _layout.changeViewState(viewTag, state);
+  }
+
+  @override
+  bool isWidgetReady(String viewTag) {
+    if (_layout[viewTag] == null) {
+      return false;
+    } else {
+      return _layout[viewTag]!.isReady;
     }
   }
 }

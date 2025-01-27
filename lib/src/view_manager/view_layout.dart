@@ -4,6 +4,7 @@ import 'package:flutter_duit/src/ui/models/ui_tree.dart';
 
 final class DuitViewLayout implements DuitView {
   late ElementTree _layout;
+  bool isReady = false;
 
   @override
   Widget build([String _ = ""]) {

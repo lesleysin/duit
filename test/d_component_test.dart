@@ -9,7 +9,7 @@ void main() {
   DuitRegistry.registerComponents([componentTemplate]);
 
   group("DuitComponent widget tests", () {
-    testWidgets("check merge with data", (tester) async {
+    testWidgets("must merge with data correctly", (tester) async {
       final driver = DuitDriver.static(
         {
           "type": "Component",
@@ -36,7 +36,7 @@ void main() {
       expect(cont1, findsOneWidget);
     });
 
-    testWidgets("check default value", (tester) async {
+    testWidgets("must use default value", (tester) async {
       final driver = DuitDriver.static(
         {
           "type": "Component",
@@ -60,7 +60,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final containerWithDefaultColorValue =
-      find.byKey(const Key("container2"));
+          find.byKey(const Key("container2"));
       expect(containerWithDefaultColorValue, findsOneWidget);
       expect(
         (tester.firstWidget(containerWithDefaultColorValue) as Container).color,
@@ -68,7 +68,7 @@ void main() {
       );
     });
 
-    testWidgets("check component without description", (tester) async {
+    testWidgets("must return empty view when tag is invalid", (tester) async {
       final driver = DuitDriver.static(
         {
           "type": "Component",
@@ -95,7 +95,7 @@ void main() {
       expect(emptyWidget, findsOneWidget);
     });
 
-    testWidgets("check component update process", (tester) async {
+    testWidgets("must update component state", (tester) async {
       final driver = DuitDriver.static(
         {
           "type": "Component",
@@ -133,6 +133,53 @@ void main() {
       final fCont = container.first.evaluate().first.widget as Container;
 
       expect(fCont.color, ColorUtils.tryParseColor("#DCDCDC"));
+    });
+
+    testWidgets("must register embedded component", (tester) async {
+      final driver = DuitDriver.static(
+        {
+          "embedded": [
+            componentTemplate2,
+          ],
+          "type": "Column",
+          "id": "column1",
+          "controlled": false,
+          "attributes": {},
+          "children": [
+            {
+              "type": "Component",
+              "id": "testId1",
+              "controlled": true,
+              "tag": "x",
+              "data": componentTemplateData,
+            },
+            {
+              "type": "Component",
+              "id": "testId2",
+              "controlled": true,
+              "tag": "y",
+              "data": componentTemplateData,
+            }
+          ],
+        },
+        transportOptions: HttpTransportOptions(),
+        enableDevMetrics: false,
+      );
+
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: DuitViewHost(
+            driver: driver,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final container = find.byKey(const ValueKey("target_container"));
+
+      expect(container, findsWidgets);
     });
   });
 }

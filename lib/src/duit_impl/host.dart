@@ -15,7 +15,6 @@ import 'package:flutter_duit/src/utils/index.dart';
 /// ```dart
 /// DuitViewHost(
 ///   driver: myUIDriver,
-///   context: context,
 ///   placeholder: CircularProgressIndicator(),
 /// )
 /// ```
@@ -89,6 +88,12 @@ class _DuitViewHostState extends State<DuitViewHost> {
   }
 
   @override
+  void dispose() {
+    widget.driver.notifyWidgetDisplayStateChanged(widget.viewTag, 0);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder(
       stream: widget.driver.eventStream,
@@ -101,21 +106,26 @@ class _DuitViewHostState extends State<DuitViewHost> {
           throw snapshot.error!;
         }
 
-        return snapshot.data != null
-            ? DuitViewContext(
-                gestureInterceptor: widget.gestureInterceptor,
-                gestureInterceptorBehavior: widget.gestureInterceptorBehavior,
-                child: _StackWrapper(
-                  invertStack: widget.invertStack,
-                  content: (snapshot.data as UIDriverViewEvent)
-                      .model
-                      .build(widget.viewTag),
-                  child: widget.child,
-                ),
-              )
-            : widget.showChildInsteadOfPlaceholder
-                ? widget.child!
-                : widget.placeholder ?? const SizedBox.shrink();
+        if (snapshot.hasData) {
+          final content =
+              (snapshot.data as UIDriverViewEvent).model.build(widget.viewTag);
+
+          widget.driver.notifyWidgetDisplayStateChanged(widget.viewTag, 1);
+
+          return DuitViewContext(
+            gestureInterceptor: widget.gestureInterceptor,
+            gestureInterceptorBehavior: widget.gestureInterceptorBehavior,
+            child: _StackWrapper(
+              invertStack: widget.invertStack,
+              content: content,
+              child: widget.child,
+            ),
+          );
+        } else {
+          return widget.showChildInsteadOfPlaceholder
+              ? widget.child!
+              : widget.placeholder ?? const SizedBox.shrink();
+        }
       },
     );
   }

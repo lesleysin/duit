@@ -13,10 +13,24 @@ import 'package:flutter/material.dart';
 ///
 /// - `build`: Constructs a Flutter `Widget` representation of the view. This method can be
 ///   overridden by subclasses to provide custom widget-building logic based on a tag.
-abstract base class ViewManager {
+abstract base class ViewManager implements WidgetDisplayStateNotifier {
   late final UIDriver driver;
 
   Future<DuitView?> prepareLayout(Map<String, dynamic> json);
 
   Widget build([String tag = ""]);
+
+  @override
+  void notifyWidgetDisplayStateChanged(
+    String viewTag,
+    int state,
+  );
+
+  void addController(String id, UIElementController controller);
+
+  UIElementController? removeController(String id);
+
+  UIElementController? getController(String id);
+
+  int get controllersCount;
 }
